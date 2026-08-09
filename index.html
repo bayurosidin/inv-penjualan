@@ -230,10 +230,11 @@
   footer{max-width:1200px;margin:40px auto 0;padding:16px 24px 0;border-top:1px solid var(--line);
     font-size:11.5px;color:var(--ink);opacity:0.45;text-align:center;}
 
+  @page{ size:A4; margin:8mm; }
   @media print{
     body *{visibility:hidden;}
     #invoicePreview, #invoicePreview *{visibility:visible;}
-    #invoicePreview{position:absolute;top:0;left:0;box-shadow:none;border-top:6px solid var(--olive);margin:0;max-width:none;width:100%;}
+    #invoicePreview{position:absolute;top:0;left:0;box-shadow:none;border-top:6px solid var(--olive);margin:0;max-width:none;width:100%;transform-origin:top left;}
   }
 </style>
 </head>
@@ -706,6 +707,26 @@ function renderHistory(){
 /* ---------- PDF & PRINT ---------- */
 document.getElementById('btnPrint').addEventListener('click', ()=> window.print());
 
+// Otomatis mengecilkan invoice supaya selalu muat dalam 1 halaman saat dicetak
+function fitInvoiceToOnePage(){
+  const node = document.getElementById('invoicePreview');
+  if(!node) return;
+  node.style.transform = 'none';
+  const pageHeightMm = 297 - 16; // A4 tinggi dikurangi margin atas+bawah (@page margin 8mm)
+  const pageHeightPx = pageHeightMm * 96 / 25.4; // konversi mm ke px (96dpi)
+  const contentHeightPx = node.scrollHeight;
+  if(contentHeightPx > pageHeightPx){
+    const scale = pageHeightPx / contentHeightPx;
+    node.style.transform = 'scale(' + scale + ')';
+  }
+}
+function resetInvoiceScale(){
+  const node = document.getElementById('invoicePreview');
+  if(node) node.style.transform = 'none';
+}
+window.addEventListener('beforeprint', fitInvoiceToOnePage);
+window.addEventListener('afterprint', resetInvoiceScale);
+
 document.getElementById('btnDownloadPdf').addEventListener('click', async ()=>{
   const btn = document.getElementById('btnDownloadPdf');
   const d = renderPreview();
@@ -720,18 +741,13 @@ document.getElementById('btnDownloadPdf').addEventListener('click', async ()=>{
     const pdf = new jsPDF('p','mm','a4');
     const pageWidth = pdf.internal.pageSize.getWidth();
     const pageHeight = pdf.internal.pageSize.getHeight();
-    const imgWidth = pageWidth;
-    const imgHeight = canvas.height * imgWidth / canvas.width;
-    let heightLeft = imgHeight;
-    let position = 0;
-    pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-    heightLeft -= pageHeight;
-    while(heightLeft > 0){
-      position = heightLeft - imgHeight;
-      pdf.addPage();
-      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-      heightLeft -= pageHeight;
-    }
+    // Selalu dipaksa muat dalam 1 halaman: skala mengikuti sisi yang lebih membatasi
+    const ratio = Math.min(pageWidth / canvas.width, pageHeight / canvas.height);
+    const imgWidth = canvas.width * ratio;
+    const imgHeight = canvas.height * ratio;
+    const offsetX = (pageWidth - imgWidth) / 2;
+    const offsetY = 0;
+    pdf.addImage(imgData, 'PNG', offsetX, offsetY, imgWidth, imgHeight);
     const filename = 'Invoice-' + (d.nomor || 'draft') + '.pdf';
     pdf.save(filename);
     showToast('PDF berhasil diunduh.');
