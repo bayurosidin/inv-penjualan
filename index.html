@@ -134,10 +134,41 @@
   .item-row .rm-btn:active{transform:scale(.92);}
   .item-head{display:grid;grid-template-columns:1.6fr 0.7fr 0.7fr 1fr 1fr auto;gap:8px;margin-bottom:6px;}
   .item-head span{font-size:10px;text-transform:uppercase;letter-spacing:0.4px;color:var(--ink);opacity:0.5;font-weight:600;}
+  select{appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='%23B9AC7E'><path d='M5.5 7.5l4.5 4.5 4.5-4.5z'/></svg>");background-repeat:no-repeat;background-position:right 10px center;background-size:16px;padding-right:30px;}
   @media (max-width:640px){
-    .item-row,.item-head{grid-template-columns:1fr 1fr;}
     .item-head{display:none;}
-    .item-row{border-bottom:1px dashed var(--line);padding-bottom:10px;}
+    .item-row{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:10px;
+      align-items:end;
+      position:relative;
+      background:#fff;
+      border:1px solid var(--line);
+      border-radius:8px;
+      padding:14px 40px 14px 14px;
+      margin-bottom:12px;
+    }
+    .item-row > div{position:relative;}
+    .item-row > div[data-label]::before{
+      content:attr(data-label);
+      display:block;
+      font-size:9.5px;
+      text-transform:uppercase;
+      letter-spacing:0.4px;
+      color:var(--ink);
+      opacity:0.5;
+      font-weight:600;
+      margin-bottom:4px;
+    }
+    .item-row .field-nama{grid-column:1 / -1;}
+    .item-row .rm-btn{
+      position:absolute;
+      top:10px;
+      right:10px;
+      padding:5px 9px;
+      font-size:12px;
+    }
   }
 
   /* HISTORY LIST */
@@ -443,20 +474,20 @@ function showToast(msg){
 }
 
 /* ---------- PERSISTENCE ---------- */
-async function loadInvoices(){
+function loadInvoices(){
   try{
-    const res = await window.storage.get(STORAGE_KEY, false);
-    if(res && res.value){
-      const parsed = JSON.parse(res.value);
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(raw){
+      const parsed = JSON.parse(raw);
       INVOICES = Array.isArray(parsed) ? parsed : [];
     }
   }catch(e){
     console.warn('Belum ada riwayat invoice tersimpan.', e);
   }
 }
-async function persistInvoices(){
+function persistInvoices(){
   try{
-    await window.storage.set(STORAGE_KEY, JSON.stringify(INVOICES), false);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(INVOICES));
   }catch(e){
     console.error('Gagal menyimpan invoice', e);
     showToast('Gagal menyimpan, coba lagi.');
@@ -464,6 +495,20 @@ async function persistInvoices(){
 }
 
 /* ---------- ITEM ROWS (EDITOR) ---------- */
+const JENIS_BIJI = [
+  'Arabica Fullwash',
+  'Arabica Semiwash',
+  'Asalan Arabica Fullwash',
+  'Asalan Arabica Semiwash',
+  'Arabica Natural',
+  'Arabica Honey',
+  'Arabica Wine',
+  'Robusta',
+  'Lanang',
+  'Luwak',
+  'Reject'
+];
+
 function addItem(prefill){
   itemsState.push(prefill || { nama:'', jumlah:1, satuan:'kg', harga:0 });
   renderItemRows();
@@ -480,17 +525,24 @@ function renderItemRows(){
     wrap.innerHTML = '<p class="empty-state">Belum ada barang. Klik "+ Tambah barang".</p>';
     return;
   }
+  const jenisOptions = (selected)=>{
+    const opts = ['<option value="" disabled' + (selected ? '' : ' selected') + '>Pilih jenis biji</option>'];
+    JENIS_BIJI.forEach(j=>{
+      opts.push(`<option value="${escapeHtml(j)}"${j===selected ? ' selected' : ''}>${escapeHtml(j)}</option>`);
+    });
+    return opts.join('');
+  };
   wrap.innerHTML = itemsState.map((it,idx)=>`
     <div class="item-row" data-idx="${idx}">
-      <div><input type="text" data-field="nama" value="${escapeHtml(it.nama)}" placeholder="Nama biji"></div>
-      <div><input type="number" data-field="jumlah" min="0" step="0.1" value="${it.jumlah}"></div>
-      <div><input type="text" data-field="satuan" value="${escapeHtml(it.satuan)}" placeholder="kg"></div>
-      <div><input type="number" data-field="harga" min="0" step="500" value="${it.harga}"></div>
-      <div><input type="text" disabled value="${fmtRp(it.jumlah*it.harga)}" style="opacity:.7;"></div>
+      <div class="field-nama" data-label="Nama barang"><select data-field="nama">${jenisOptions(it.nama)}</select></div>
+      <div data-label="Jumlah"><input type="number" data-field="jumlah" min="0" step="0.1" value="${it.jumlah}"></div>
+      <div data-label="Satuan"><input type="text" data-field="satuan" value="${escapeHtml(it.satuan)}" placeholder="kg"></div>
+      <div data-label="Harga satuan"><input type="number" data-field="harga" min="0" step="500" value="${it.harga}"></div>
+      <div data-label="Subtotal"><input type="text" disabled value="${fmtRp(it.jumlah*it.harga)}" style="opacity:.7;"></div>
       <button type="button" class="rm-btn" onclick="removeItem(${idx})" aria-label="Hapus baris">✕</button>
     </div>`).join('');
 }
-document.getElementById('itemRows').addEventListener('input', (e)=>{
+function handleItemFieldChange(e){
   const row = e.target.closest('.item-row');
   if(!row) return;
   const idx = parseInt(row.dataset.idx,10);
@@ -499,10 +551,12 @@ document.getElementById('itemRows').addEventListener('input', (e)=>{
   let val = e.target.value;
   if(field==='jumlah' || field==='harga') val = parseFloat(val)||0;
   itemsState[idx][field] = val;
-  const subEl = row.children[4].querySelector('input');
+  const subEl = row.querySelector('[data-label="Subtotal"] input');
   if(subEl) subEl.value = fmtRp(itemsState[idx].jumlah * itemsState[idx].harga);
   renderPreview();
-});
+}
+document.getElementById('itemRows').addEventListener('input', handleItemFieldChange);
+document.getElementById('itemRows').addEventListener('change', handleItemFieldChange);
 document.getElementById('btnAddItem').addEventListener('click', ()=>addItem());
 window.removeItem = removeItem;
 
