@@ -495,19 +495,30 @@ function persistInvoices(){
 }
 
 /* ---------- ITEM ROWS (EDITOR) ---------- */
-const JENIS_BIJI = [
-  'Arabica Fullwash',
-  'Arabica Semiwash',
-  'Asalan Arabica Fullwash',
-  'Asalan Arabica Semiwash',
-  'Arabica Natural',
-  'Arabica Honey',
-  'Arabica Wine',
-  'Robusta',
-  'Lanang',
-  'Luwak',
-  'Reject',
-  'Komersil'
+const KATEGORI_BARANG = [
+  {
+    kategori: 'Green Bean',
+    items: [
+      'Arabica Fullwash',
+      'Arabica Semiwash',
+      'Asalan Arabica Fullwash',
+      'Asalan Arabica Semiwash',
+      'Arabica Natural',
+      'Arabica Honey',
+      'Arabica Wine',
+      'Robusta',
+      'Lanang',
+      'Luwak',
+      'Reject',
+      'Komersil'
+    ]
+  },
+  {
+    kategori: 'Roastbean',
+    items: [
+      'House Blend'
+    ]
+  }
 ];
 
 function addItem(prefill){
@@ -527,9 +538,13 @@ function renderItemRows(){
     return;
   }
   const jenisOptions = (selected)=>{
-    const opts = ['<option value="" disabled' + (selected ? '' : ' selected') + '>Pilih jenis biji</option>'];
-    JENIS_BIJI.forEach(j=>{
-      opts.push(`<option value="${escapeHtml(j)}"${j===selected ? ' selected' : ''}>${escapeHtml(j)}</option>`);
+    const opts = ['<option value="" disabled' + (selected ? '' : ' selected') + '>Pilih jenis barang</option>'];
+    KATEGORI_BARANG.forEach(grp=>{
+      opts.push(`<optgroup label="${escapeHtml(grp.kategori)}">`);
+      grp.items.forEach(j=>{
+        opts.push(`<option value="${escapeHtml(j)}"${j===selected ? ' selected' : ''}>${escapeHtml(j)}</option>`);
+      });
+      opts.push('</optgroup>');
     });
     return opts.join('');
   };
@@ -664,10 +679,10 @@ function resetForm(){
   document.getElementById('fTanggal').value = todayStr();
   document.getElementById('fStatus').value = 'belum';
   document.getElementById('fMetode').value = 'Cash';
-  document.getElementById('bNama').value = 'ARM Upeksha';
+  document.getElementById('bNama').value = 'Arm Upeksha';
   document.getElementById('bPic').value = '';
-  document.getElementById('bAlamat').value = '';
-  document.getElementById('bKontak').value = '';
+  document.getElementById('bAlamat').value = 'Jl. Kp. Batureok, Cimaung, Kec. Cimaung, Kabupaten Bandung, Jawa Barat 40374';
+  document.getElementById('bKontak').value = '085179576019';
   document.getElementById('sNama').value = '';
   document.getElementById('sAlamat').value = '';
   document.getElementById('sKontak').value = '';
