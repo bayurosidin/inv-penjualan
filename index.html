@@ -728,7 +728,12 @@ function renderPreview(){
   document.getElementById('pDiskon').textContent = '-' + fmtRp(d.diskon);
   document.getElementById('pBiayaLain').textContent = fmtRp(d.biayaLain);
   document.getElementById('pTotal').textContent = fmtRp(total);
-  document.getElementById('pMetode').textContent = d.metode || 'Cash';
+  const metode = d.metode || 'Cash';
+  if(metode === 'Transfer Bank Mandiri') {
+    document.getElementById('pMetode').textContent = 'Transfer — Bank Mandiri | No. Rek 1300024837554 | a.n. AHMAD ABDILAH';
+  } else {
+    document.getElementById('pMetode').textContent = metode;
+  }
 
   const noteWrap = document.getElementById('pCatatanWrap');
   if(d.catatan){
