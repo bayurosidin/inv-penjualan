@@ -358,6 +358,13 @@
     #invoicePreview{position:absolute;top:0;left:0;box-shadow:none;border-top:6px solid var(--olive);margin:0;max-width:none;width:100%;transform-origin:top left;}
   }
 </style>
+
+<style id="payment-method-fix">
+  .inv-payment-row{display:flex;align-items:flex-start;justify-content:flex-start;gap:10px;flex-wrap:wrap;}
+  .inv-payment{width:100%;min-width:0;}
+  .inv-payment .method{display:block;width:100%;white-space:normal;overflow:visible;text-overflow:clip;overflow-wrap:anywhere;word-break:normal;line-height:1.5;}
+  @media print{.inv-payment .method{white-space:normal;overflow:visible;overflow-wrap:anywhere;}}
+</style>
 </head>
 <body>
 
@@ -730,7 +737,7 @@ function renderPreview(){
   document.getElementById('pTotal').textContent = fmtRp(total);
   const metode = d.metode || 'Cash';
   if(metode === 'Transfer Bank Mandiri') {
-    document.getElementById('pMetode').textContent = 'Transfer — Bank Mandiri | No. Rek 1300024837554 | a.n. AHMAD ABDILAH';
+    document.getElementById('pMetode').textContent = 'Transfer — Bank Mandiri | No. Rek 1300024837554 - AHMAD ABDILAH';
   } else {
     document.getElementById('pMetode').textContent = metode;
   }
